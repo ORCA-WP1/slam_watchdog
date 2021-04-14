@@ -19,7 +19,7 @@ class Watchdog():
         self.alarms=[]
         self.current_map=0
         self.desired_merges=[]
-        self.map_merged = rospy.Service('orbslam_map_merged', vehicle_interface.srv.MapMergingInfo, self.handle_MapMergingInfo)
+        self.map_merged = rospy.Service('/ORBSLAM3/map_merged', vehicle_interface.srv.MapMergingInfo, self.handle_MapMergingInfo)
         rospy.wait_for_service('/bluerov2_rosplan/failures/planner_reloc_request')
         self.caller_reloc_request = rospy.ServiceProxy('/bluerov2_rosplan/failures/planner_reloc_request', vehicle_interface.srv.PlannerRelocRequest)
         self.caller_reloc_done = rospy.ServiceProxy('/bluerov2_rosplan/failures/planner_reloc_done', vehicle_interface.srv.PlannerRelocDone)
@@ -49,13 +49,13 @@ class Watchdog():
                 score=request.keyframe_value[itr]
 
 
-        # desired_pose=request.keyframe_value[score_id]
-        # reloc_transforms=[]
-        # reloc_transforms.append(request.data[score_id])
-        
-        desired_pose=request.keyframe_value[0]
+        desired_pose=request.keyframe_value[score_id]
         reloc_transforms=[]
-        reloc_transforms.append(request.data[0])
+        reloc_transforms.append(request.data[score_id])
+        
+        # desired_pose=request.keyframe_value[0]
+        # reloc_transforms=[]
+        # reloc_transforms.append(request.data[0])
         
         #SEND MESSAGE TO PLANNER
         rospy.loginfo("sending transforms to planner")
@@ -69,13 +69,13 @@ class Watchdog():
 
     def handle_MapMergingInfo(self,request):
         #Go over alarms and reassign IDs (remove these alarms?)
-
+        rospy.loginfo("Received map merged service call")
         success=False
 
-        for itr in range(len(desired_merges)):
-            if desired_merges[itr]==request.merged_map_id:
+        for itr in range(len(self.desired_merges)):
+            if self.desired_merges[itr]==request.merged_map_id:
                 success=True
-                del desired_merges[itr]
+                del self.desired_merges[itr]
                 break
         if success:
             resp=self.caller_reloc_done(request.merged_map_id)
